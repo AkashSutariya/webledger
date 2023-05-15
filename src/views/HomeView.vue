@@ -22,7 +22,7 @@
     <div class="m-4 p-3 rounded bg-white">
       <!--START: TASK VIEW HEADER -->
       <div class="flex justify-between items-center">
-        <p>56 Records Available</p>
+        <p>{{ tasksStore.getAllTasks.length }} Records Available</p>
         <div class="flex gap-2">
           <input
             type="text"
