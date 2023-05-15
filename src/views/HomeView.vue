@@ -28,6 +28,7 @@
             type="text"
             placeholder="search here anything"
             class="p-2 border rounded"
+            v-model="state.labelQ"
           />
           <Button type="secondary" @click="openStagesModal">
             <template v-slot:icon>
@@ -116,25 +117,25 @@
             </tr>
           </thead>
           <tbody>
-            <tr class="border-b border-slate-100 text-slate-500">
-              <td class="p-4 pl-8">Test Task</td>
-              <td class="p-4 pl-8">Test Linked To</td>
-              <td class="p-4 pl-8">Test Stage</td>
-              <td class="p-4 pl-8">12/05/2023</td>
-              <td class="p-4 pl-8">12/05/2023</td>
+            <tr v-for="task in getAllTasks" class="border-b border-slate-100 text-slate-500">
+              <td class="p-4 pl-8">{{ task.name }}</td>
+              <td class="p-4 pl-8">{{ task.linkedTo }}</td>
+              <td class="p-4 pl-8">{{ task.stage.label }}</td>
+              <td class="p-4 pl-8">{{ task.dueDate }}</td>
+              <td class="p-4 pl-8">{{ task.assignee }}</td>
               <td class="p-4 pl-8">
                 <div class="flex gap-3">
-                  <Button type="icon" size="small">
+                  <Button type="icon" size="small" @click="viewTask(task)">
                     <template v-slot:icon>
                       <EyeIcon class="h-6 w-6 text-yellow-500" />
                     </template>
                   </Button>
-                  <Button type="icon" size="small">
+                  <Button type="icon" size="small" @click="editTask(task)">
                     <template v-slot:icon>
                       <PencilSquareIcon class="h-6 w-6 text-blue-500" />
                     </template>
                   </Button>
-                  <Button type="icon" size="small">
+                  <Button type="icon" size="small" @click="tasksStore.deleteTaskById(task.id)">
                     <template v-slot:icon>
                       <XMarkIcon class="h-6 w-6 text-red-500" />
                     </template>
@@ -144,6 +145,26 @@
             </tr>
           </tbody>
         </table>
+        <!--START: TASK TABLE PAGINATION -->
+        <div class=" flex justify-end items-center gap-4">
+          <InputSelect
+            class=" w-fit"
+            v-model="state.pageSize"
+            label="Show Rows"
+            :options="state.pageSizes"
+          />
+          <Button type="secondary" @click="state.pageNumber--" :disabled="state.pageNumber <= 1">
+            <template v-slot:icon>
+              <ChevronLeftIcon class="h-4 w-4" />
+            </template>
+          </Button>
+          <Button type="secondary" @click="state.pageNumber++" :disabled="state.pageNumber >= Math.ceil(tasksStore.getAllTasks.length / state.pageSize)">
+            <template v-slot:icon>
+              <ChevronRightIcon class="h-4 w-4" />
+            </template>
+          </Button>
+        </div>
+        <!--END: TASK TABLE PAGINATION -->
       </div>
       <!--END: TASK TABLE VIEW -->
     </div>
@@ -321,7 +342,7 @@
 </template>
 <script setup lang="ts">
 // Core Vue
-import { reactive } from 'vue'
+import { reactive, computed } from 'vue'
 
 // Components
 import Button from '@/components/ui/Button.vue'
@@ -350,6 +371,8 @@ import {
   DocumentIcon,
   CalendarDaysIcon,
   Squares2X2Icon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from '@heroicons/vue/20/solid'
 
 // Pinia Stores
@@ -382,6 +405,26 @@ const state = reactive({
   showTaskModal: false,
   taskModalMode: 'input',
   newTask: cloneNewTask(),
+  labelQ: '',
+  pageSize: 20,
+  pageNumber: 1,
+  pageSizes: [
+    5, 10, 15, 20
+  ],
+})
+
+// All tasks
+const getAllTasks = computed(() => {
+  // Filter by search query
+  const regex = new RegExp(state.labelQ, 'i')
+  const tasks = tasksStore.getPaginatedTasks(state.pageSize, state.pageNumber).filter((task) => {
+    if (!state.labelQ || task.name.search(regex) !== -1) {
+      return true
+    }
+    return false
+  })
+
+  return tasks
 })
 
 // Methods
