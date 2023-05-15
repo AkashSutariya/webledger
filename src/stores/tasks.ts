@@ -89,7 +89,7 @@ export const useTasksStore = defineStore('tasks', {
       const task = this.getTaskById(taskId)
       const stage = stagesStore.getStageById(stageId)
 
-      if (task && stage) {
+      if ((task && stage) && task.stage.id !== stageId) {
         const stageUpdatedAt = new Date().getTime()
 
         // Add total time in milisecond against stage id
