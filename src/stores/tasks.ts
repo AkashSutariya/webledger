@@ -17,6 +17,12 @@ export const useTasksStore = defineStore('tasks', {
       taskAutoId: 0
     }
   },
+  persist: [
+    {
+      paths: ['tasks', 'taskAutoId'],
+      storage: localStorage
+    }
+  ],
   getters: {
     getAllTasks(): task[] {
       return this.tasks.filter((task) => !task.isDeleted)

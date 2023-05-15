@@ -53,6 +53,12 @@ export const useStagesStore = defineStore('stages', {
       ]
     }
   },
+  persist: [
+    {
+      paths: ['stages', 'stageAutoId'],
+      storage: localStorage
+    }
+  ],
   getters: {
     getStages(): stage[] {
       return this.stages.filter((stage) => !stage.isDeleted)
