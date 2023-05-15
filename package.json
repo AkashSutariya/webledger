@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@heroicons/vue": "^2.0.18",
+    "click-outside-vue3": "^4.0.1",
     "pinia": "^2.0.32",
     "vue": "^3.2.47",
     "vue-router": "^4.1.6"
