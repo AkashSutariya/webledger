@@ -41,17 +41,22 @@
       <!--START: TASK GRID VIEW -->
       <div class="mt-5 flex gap-2 min-h-[500px]" v-if="state.taskView === 'grid'">
         <div
+          v-for="(stage, id) in getAllTasksGrid"
+          :data-stage-id="id"
           class="w-60 bg-slate-300 rounded-lg"
+          @drop="handleDrop"
+          @dragover="handleDragOver"
         >
-          <div class="flex justify-between rounded-t-lg p-2 bg-green-800">
+          <div class="flex justify-between rounded-t-lg p-2" :style="{ background: stage.color }">
             <p class="text-white">
-              Not Started
+              {{ stage.label }}
             </p>
             <Button
+              v-show="stage.tasks.length"
               class="rounded-full px-2"
               size="small"
               type="secondary"
-              :label="1"
+              :label="stage.tasks.length"
             >
               <template v-slot:icon>
                 <DocumentIcon class="h-4 w-4" />
@@ -59,23 +64,27 @@
             </Button>
           </div>
           <div
+            v-for="task in stage.tasks"
+            :data-task-id="task.id"
             class="p-2"
             draggable="true"
+            @dragstart="handleDragStart"
           >
             <div
-              class="bg-white rounded-md p-2  border-t-2 border-green-800"
+              :class="'bg-white rounded-md p-2  border-t-2'"
+              :style="{ 'border-color': stage.color }"
             >
               <div class="flex justify-between items-center">
                 <p>
                   <StopCircleIcon class="h-4 w-4 text-yellow-400 inline" />
-                  Test Linked To
+                  {{ task.linkedTo }}
                 </p>
                 <EllipsisVerticalIcon class="h-4 w-4" />
               </div>
               <hr class="my-2" />
               <div class="flex justify-between">
                 <p>Parent</p>
-                <p>Test parent</p>
+                <p>{{ task.parent }}</p>
               </div>
               <div class="flex justify-between">
                 <p>
@@ -87,16 +96,16 @@
               <hr class="my-2" />
               <p>
                 <CalendarDaysIcon class="h-4 w-4 text-green-500 inline" />
-                12/05/2023
+                {{ task.startDate }}
               </p>
               <p class="text-red-500">
                 <CalendarDaysIcon class="h-4 w-4 inline" />
-                12/05/2023
+                {{ task.dueDate }}
               </p>
               <hr class="my-2" />
               <p>
                 <CalendarDaysIcon class="h-4 w-4 text-blue-800 inline" />
-                Test Assignee
+                {{ task.assignee }}
               </p>
             </div>
           </div>
@@ -413,6 +422,7 @@ const state = reactive({
   ],
 })
 
+// Computed Properties
 // All tasks
 const getAllTasks = computed(() => {
   // Filter by search query
@@ -425,6 +435,25 @@ const getAllTasks = computed(() => {
   })
 
   return tasks
+})
+
+// All tasks for grid view
+const getAllTasksGrid = computed(() => {
+  const stages: { [key: string]: any } = {}
+
+  for (const stage of stagesStore.getStages) {
+    stages[stage.id] = {
+      label: stage.label,
+      color: stage.color,
+      tasks: []
+    }
+  }
+
+  for (const task of getAllTasks.value) {
+    stages[task.stage.id].tasks.push(task)
+  }
+
+  return stages
 })
 
 // Methods
@@ -496,5 +525,30 @@ function viewTask(task: task) {
 function editTask(task: task) {
   state.taskModalMode = 'input'
   openTaskModal(task)
+}
+
+// Handle Drop Task
+function handleDrop(event: DragEvent) {
+  event.preventDefault()
+  const taskId = event.dataTransfer?.getData('taskId')
+  const target = event.target as HTMLElement
+  const stageId = target.dataset.stageId
+  if (taskId && stageId) {
+    tasksStore.updateTaskStatusById(parseInt(taskId), parseInt(stageId))
+  }
+}
+
+// Drag Start Task
+function handleDragStart(event: DragEvent) {
+  const target = event.target as HTMLElement
+  const taskId = target.dataset.taskId
+  if (taskId) {
+    event.dataTransfer?.setData('taskId', taskId)
+  }
+}
+
+// Allow Drop
+function handleDragOver(event: Event) {
+  event.preventDefault()
 }
 </script>

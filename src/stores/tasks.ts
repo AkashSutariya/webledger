@@ -45,8 +45,10 @@ export const useTasksStore = defineStore('tasks', {
         dueDate,
         description,
         isDeleted = false,
+        timeTrackers = [],
         createdAt = timestamp,
         updatedAt = timestamp,
+        stageUpdatedAt = timestamp
       } = payload
 
       this.tasks.push({
@@ -61,8 +63,10 @@ export const useTasksStore = defineStore('tasks', {
         dueDate,
         description,
         isDeleted,
+        timeTrackers,
         createdAt,
         updatedAt,
+        stageUpdatedAt
       })
     },
     updateTaskById(id: number, taskData: task) {
@@ -71,6 +75,26 @@ export const useTasksStore = defineStore('tasks', {
       if (index !== -1) {
         this.tasks[index] = { ...taskData }
         this.tasks[index].updatedAt = new Date().getTime()
+      }
+    },
+    updateTaskStatusById(taskId: number, stageId: number) {
+      const stagesStore = useStagesStore()
+
+      const task = this.getTaskById(taskId)
+      const stage = stagesStore.getStageById(stageId)
+
+      if (task && stage) {
+        const stageUpdatedAt = new Date().getTime()
+
+        // Add total time in milisecond against stage id
+        task.timeTrackers.push({
+          stageId: task.stage.id,
+          time: stageUpdatedAt - task.stageUpdatedAt
+        })
+
+        // Update stage of task
+        task.stage = stage
+        task.stageUpdatedAt = stageUpdatedAt
       }
     },
     deleteTaskById(id: number) {

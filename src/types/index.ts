@@ -17,9 +17,16 @@ export interface taskInput {
   description: string
 }
 
+export interface timeTracker {
+  stageId: number
+  time: number
+}
+
 export interface task extends taskInput {
   id: number
   createdAt: number
   updatedAt: number
+  stageUpdatedAt: number
+  timeTrackers: timeTracker[]
   isDeleted: boolean
 }
