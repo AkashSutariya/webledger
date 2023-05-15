@@ -4,7 +4,7 @@
     <div class="p-4 flex justify-between bg-white">
       <p class="text-xl font-bold">Tasks</p>
       <div class="flex gap-2">
-        <Button label="Create">
+        <Button label="Create" @click="openTaskModal">
           <template v-slot:icon>
             <PlusIcon class="h-4 w-4" />
           </template>
@@ -190,6 +190,134 @@
     </template>
   </Modal>
   <!-- END: MODAL FOR STAGE MANAGEMENT -->
+  <!-- START: MODAL FOR SPECIFIC TASK -->
+  <Modal v-show="state.showTaskModal">
+    <template v-slot:content>
+      <div class="flex justify-between items-center">
+        <p>Create New Task</p>
+        <div class="flex gap-4">
+          <div>
+            <CustomDropdown
+              :options="tasksStore.assignees"
+              v-model="state.newTask.assignee"
+              :disabled="state.taskModalMode === 'view'"
+              placeholder="Select Assignee"
+            >
+              <template v-slot:icon>
+                <UserCircleIcon class="h-7 w-7" />
+              </template>
+            </CustomDropdown>
+            <span class="text-red-500" v-if="taskv$?.assignee.$error">{{
+              taskv$?.assignee.$errors[0].$message
+            }}</span>
+          </div>
+
+          <Button type="icon" size="small" @click="closeTaskModal">
+            <template v-slot:icon>
+              <XMarkIcon class="h-6 w-6" />
+            </template>
+          </Button>
+        </div>
+      </div>
+      <hr class="my-2" />
+      <div class="grid grid-cols-3 gap-4">
+        <div>
+          <InputText
+            v-model="state.newTask.name"
+            label="Task Name"
+            name="taskname"
+            :required="true"
+            :disabled="state.taskModalMode === 'view'"
+          />
+          <span class="text-red-500" v-if="taskv$?.name.$error">{{
+            taskv$?.name.$errors[0].$message
+          }}</span>
+        </div>
+        <div>
+          <InputSelect
+            v-model="state.newTask.parent"
+            label="Parent"
+            :required="true"
+            :options="tasksStore.parents"
+            placeholder="Please Select Parent"
+            :disabled="state.taskModalMode === 'view'"
+          />
+          <span class="text-red-500" v-if="taskv$?.parent.$error">{{
+            taskv$?.parent.$errors[0].$message
+          }}</span>
+        </div>
+        <div>
+          <InputSelect
+            v-model="state.newTask.linkedTo"
+            label="Linked To"
+            :required="true"
+            :options="tasksStore.linkedTos"
+            placeholder="Please Select Linked To"
+            :disabled="state.taskModalMode === 'view'"
+          />
+          <span class="text-red-500" v-if="taskv$?.linkedTo.$error">{{
+            taskv$?.linkedTo.$errors[0].$message
+          }}</span>
+        </div>
+        <div>
+          <InputSelect
+            v-model="state.newTask.stage"
+            label="Status"
+            :required="true"
+            :options="stagesStore.getStages"
+            option-label="label"
+            placeholder="Please Select Status"
+            :disabled="state.taskModalMode === 'view'"
+          />
+          <span class="text-red-500" v-if="taskv$?.stage.$error">{{
+            taskv$?.stage.$errors[0].$message
+          }}</span>
+        </div>
+        <div>
+          <InputSelect
+            v-model="state.newTask.priority"
+            label="Priority"
+            :required="true"
+            :options="tasksStore.priorities"
+            placeholder="Please Select Priority"
+            :disabled="state.taskModalMode === 'view'"
+          />
+          <span class="text-red-500" v-if="taskv$?.priority.$error">{{
+            taskv$?.priority.$errors[0].$message
+          }}</span>
+        </div>
+        <InputDate
+          label="Date Start"
+          v-model="state.newTask.startDate"
+          :disabled="state.taskModalMode === 'view'"
+        />
+        <InputDate
+          label="Due Date"
+          v-model="state.newTask.dueDate"
+          :disabled="state.taskModalMode === 'view'"
+        />
+        <div>
+          <InputTextarea
+            v-model="state.newTask.description"
+            class="col-span-2"
+            label="Description"
+            :required="true"
+            :disabled="state.taskModalMode === 'view'"
+          />
+          <span class="text-red-500" v-if="taskv$?.description.$error">{{
+            taskv$?.description.$errors[0].$message
+          }}</span>
+        </div>
+      </div>
+      <hr class="my-2" />
+      <div class="flex gap-4 justify-end">
+        <Button type="secondary" label="Cancel" @click="closeTaskModal" />
+        <Button type="secondary" label="Discard" :disabled="state.taskModalMode === 'view'" />
+        <Button label="Save" @click="saveTask" :disabled="state.taskModalMode === 'view'" />
+      </div>
+    </template>
+  </Modal>
+  <!-- END: MODAL FOR SPECIFIC TASK -->
 </template>
 <script setup lang="ts">
 // Core Vue
@@ -198,6 +326,14 @@ import { reactive } from 'vue'
 // Components
 import Button from '@/components/ui/Button.vue'
 import Modal from '@/components/ui/Modal.vue'
+import InputText from '@/components/ui/InputText.vue'
+import InputSelect from '@/components/ui/InputSelect.vue'
+import InputDate from '@/components/ui/InputDate.vue'
+import InputTextarea from '@/components/ui/InputTextarea.vue'
+import CustomDropdown from '@/components/ui/CustomDropdown.vue'
+
+// Types
+import type { stage, task, taskInput } from '@/types/index'
 
 // Heroicons
 import {
@@ -218,13 +354,34 @@ import {
 
 // Pinia Stores
 import { useStagesStore } from '@/stores/stages'
+import { useTasksStore } from '@/stores/tasks'
 
+const tasksStore = useTasksStore()
 const stagesStore = useStagesStore()
+
+// Validation
+import { useVuelidate } from '@vuelidate/core'
+import { required } from '@vuelidate/validators'
+
+const rules = {
+  name: { required },
+  assignee: { required },
+  parent: { required },
+  linkedTo: { required },
+  priority: { required },
+  stage: { required },
+  description: { required }
+}
+
+let taskv$: any = null
 
 // State of Component
 const state = reactive({
   showStagesModal: false,
   taskView: 'list',
+  showTaskModal: false,
+  taskModalMode: 'input',
+  newTask: cloneNewTask(),
 })
 
 // Methods
@@ -242,5 +399,59 @@ function toggleTaskview() {
   } else if (state.taskView === 'grid') {
     state.taskView = 'list'
   }
+}
+
+function openTaskModal(task: null | task = null) {
+  if (task) {
+    state.newTask = { ...task }
+  } else {
+    state.taskModalMode = 'input'
+    state.newTask = cloneNewTask()
+  }
+  taskv$ = useVuelidate(rules, state.newTask)
+  state.showTaskModal = true
+}
+
+function closeTaskModal() {
+  state.showTaskModal = false
+}
+
+function cloneNewTask(): taskInput {
+  return {
+    name: '',
+    assignee: '',
+    parent: '',
+    linkedTo: '',
+    priority: '',
+    stage: null as unknown as stage,
+    startDate: '',
+    dueDate: '',
+    description: ''
+  }
+}
+
+
+async function saveTask() {
+  const isValid = await taskv$.value.$validate()
+
+  if (isValid) {
+    const taskId = (state.newTask as task).id
+    if (taskId) {
+      tasksStore.updateTaskById(taskId, state.newTask as task)
+    } else {
+      tasksStore.addTask(state.newTask as task)
+    }
+    closeTaskModal()
+  }
+}
+
+function viewTask(task: task) {
+  state.taskModalMode = 'view'
+  openTaskModal(task)
+}
+
+function editTask(task: task) {
+  state.taskModalMode = 'input'
+  openTaskModal(task)
 }
 </script>
