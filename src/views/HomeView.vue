@@ -42,9 +42,8 @@
       <div class="mt-5 flex gap-2 min-h-[500px]" v-if="state.taskView === 'grid'">
         <div
           v-for="(stage, id) in getAllTasksGrid"
-          :data-stage-id="id"
           class="w-60 bg-slate-300 rounded-lg"
-          @drop="handleDrop"
+          @drop="(event) => handleDrop(id as string, event)"
           @dragover="handleDragOver"
         >
           <div class="flex justify-between rounded-t-lg p-2" :style="{ background: stage.color }">
@@ -528,11 +527,9 @@ function editTask(task: task) {
 }
 
 // Handle Drop Task
-function handleDrop(event: DragEvent) {
+function handleDrop(stageId: string, event: DragEvent) {
   event.preventDefault()
   const taskId = event.dataTransfer?.getData('taskId')
-  const target = event.target as HTMLElement
-  const stageId = target.dataset.stageId
   if (taskId && stageId) {
     tasksStore.updateTaskStatusById(parseInt(taskId), parseInt(stageId))
   }
